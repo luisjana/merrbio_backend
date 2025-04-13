@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3001;
 
 // CORS me frontend-in tënd
 const corsOptions = {
-  origin: 'https://merrbio-frontend-e2q1s714i-luisjanas-projects.vercel.app',
+  origin: 'https://merrbio-frontend-ed844fimd-luisjanas-projects.vercel.app/',
   methods: ['GET', 'POST', 'DELETE'],
 };
 app.use(cors(corsOptions));
