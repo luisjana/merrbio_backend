@@ -129,8 +129,15 @@ app.get('/products', (req, res) => {
         res.status(500).json({ message: 'Error loading products' });
     }
 });
+app.get('/requests', (req, res) => {
+  // Handling the request and sending response
+});
 
 // Starting the server
 app.listen(PORT, () => {
   console.log(`Serveri po punon në http://localhost:${PORT}`);
+});
+app.get('/requests', (req, res) => {
+  const requests = readData('requests.json');
+  res.json(requests);
 });
