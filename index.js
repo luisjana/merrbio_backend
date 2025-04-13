@@ -5,90 +5,92 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 3001; // Përdorimi i portit të mjedisit ose 3001 si fallback
+const PORT = process.env.PORT || 3001;
 
-// Enable CORS and JSON parsing
-app.use(cors());  // Përdorimi i CORS në nivel global
+// CORS me frontend-in tënd
+const corsOptions = {
+  origin: 'https://merrbio-frontend-e2q1s714i-luisjanas-projects.vercel.app',
+  methods: ['GET', 'POST', 'DELETE'],
+};
+app.use(cors(corsOptions));
+
+// Middleware për JSON dhe form data
 app.use(express.json());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
-app.use('/uploads', express.static('uploads'));  // Për përdorimin e ngarkimeve të imazheve
+app.use('/uploads', express.static('uploads'));
 
-// Kontrolloni nëse ka krijuar folderin për upload
+// Krijo folderin uploads nëse nuk ekziston
 if (!fs.existsSync('./uploads')) {
   fs.mkdirSync('./uploads');
 }
 
-// Konfigurimi i Multer për ngarkimin e imazheve
+// Konfigurimi për ngarkimin e imazheve
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, './uploads');
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
+  destination: (req, file, cb) => cb(null, './uploads'),
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // Maksimumi 10MB për çdo file
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const fileTypes = /jpeg|jpg|png|gif/;
     const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
     const mimeType = fileTypes.test(file.mimetype);
-    if (extname && mimeType) {
-      return cb(null, true);
-    } else {
-      cb('Only image files can be uploaded!');
-    }
+    if (extname && mimeType) return cb(null, true);
+    cb('Only image files can be uploaded!');
   }
 });
 
-// Funksione për të lexuar dhe shkruar në skedarët JSON
+// Leximi dhe shkrimi në file JSON
 const readData = (file) => {
   try {
     return JSON.parse(fs.readFileSync(`./data/${file}`, 'utf8'));
   } catch (err) {
     console.error(`Error reading ${file}: `, err);
-    return [];  // Ktheni një listë të zbrazët nëse ka gabim
+    return [];
   }
 };
 
-const writeData = (file, data) => fs.writeFileSync(`./data/${file}`, JSON.stringify(data, null, 2));
+const writeData = (file, data) => {
+  fs.writeFileSync(`./data/${file}`, JSON.stringify(data, null, 2));
+};
 
-// Route për regjistrim (POST)
+// ================= ROUTES =================
+
+// 🔐 Regjistrimi
 app.post('/register', (req, res) => {
   const users = readData('users.json');
   const { username, password, role } = req.body;
 
-  // Kontrolloni nëse përdoruesi ekziston
+  console.log('Kërkesë për /register:', req.body);
+
   if (users.find(u => u.username === username)) {
     return res.status(400).json({ message: 'User already exists!' });
   }
 
-  // Shto përdoruesin e ri
   users.push({ username, password, role });
   writeData('users.json', users);
-  res.json({ message: 'Registration successful!' });
+  res.json({ message: 'Registration successful!', role, username });
 });
 
-// Route për login (POST)
+// 🔐 Login
 app.post('/login', (req, res) => {
   const users = readData('users.json');
   const { username, password } = req.body;
 
-  // Kërko përdoruesin nëse ekziston
   const user = users.find(u => u.username === username && u.password === password);
   if (!user) return res.status(401).json({ message: 'Invalid credentials!' });
 
   res.json({ message: 'Login successful!', role: user.role, username: user.username });
 });
 
-// Route për ngarkimin e një produkti (POST)
+// 🧺 Shto produkt me foto
 app.post('/products', upload.single('image'), (req, res) => {
   const products = readData('products.json');
   const { emri, pershkrimi, cmimi, fermeri } = req.body;
-  const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';  // URL për imazhin
+  const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
 
   const product = { emri, pershkrimi, cmimi, fermeri, image: imageUrl };
   products.push(product);
@@ -96,13 +98,13 @@ app.post('/products', upload.single('image'), (req, res) => {
   res.json({ message: 'Product added successfully!' });
 });
 
-// Route për marrjen e të gjithë përdoruesve (GET)
+// 🔍 Merr të gjithë përdoruesit
 app.get('/users', (req, res) => {
   const users = readData('users.json');
   res.json(users);
 });
 
-// Route për fshirjen e përdoruesit (DELETE)
+// ❌ Fshi përdorues sipas username
 app.delete('/users/:username', (req, res) => {
   let users = readData('users.json');
   users = users.filter(u => u.username !== req.params.username);
@@ -110,7 +112,7 @@ app.delete('/users/:username', (req, res) => {
   res.json({ message: 'User deleted successfully!' });
 });
 
-// Route për marrjen e të gjitha produkteve (GET)
+// 🔍 Merr të gjitha produktet
 app.get('/products', (req, res) => {
   try {
     const products = readData('products.json');
@@ -120,13 +122,7 @@ app.get('/products', (req, res) => {
   }
 });
 
-// Starting the server
+// ================= SERVER =================
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`MerrBio backend running on http://localhost:${PORT}`);
 });
-
-const corsOptions = {
-  origin: 'https://merrbio-frontend-e2q1s714i-luisjanas-projects.vercel.app',  // URL frontend
-  methods: ['GET', 'POST'],
-};
-app.use(cors(corsOptions));  // Përdorimi i CORS
