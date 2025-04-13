@@ -136,9 +136,6 @@ app.get('/products', (req, res) => {
         res.status(500).json({ message: 'Error loading products' });
     }
 });
-app.get('/requests', (req, res) => {
-  // Handling the request and sending response
-});
 
 // Starting the server
 app.listen(PORT, () => {
@@ -154,3 +151,12 @@ const corsOptions = {
 };
 
 
+// Krijimi i një endpoint GET për regjistrimin (kjo mund të jetë për testim)
+app.get('/register', (req, res) => {
+  res.send('This is the registration page (GET method)');
+});
+
+// Krijimi i një endpoint GET për login (kjo mund të jetë për testim)
+app.get('/login', (req, res) => {
+  res.send('This is the login page (GET method)');
+});
