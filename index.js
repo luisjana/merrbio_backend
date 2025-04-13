@@ -141,3 +141,9 @@ app.get('/requests', (req, res) => {
   const requests = readData('requests.json');
   res.json(requests);
 });
+const corsOptions = {
+  origin: 'https://merrbio-frontend-e2q1s714i-luisjanas-projects.vercel.app/',  // Zëvendësoni me URL-në e frontend-it tuaj
+  methods: ['GET', 'POST'],
+};
+app.use(cors(corsOptions));
+
