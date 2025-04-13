@@ -1,0 +1,37 @@
+[
+  {
+    "username": "admin",
+    "password": "admin123",
+    "role": "admin"
+  },
+  {
+    "username": "lusi",
+    "password": "lusi",
+    "role": "konsumator"
+  },
+  {
+    "username": "b ",
+    "password": "nm bmn",
+    "role": "konsumator"
+  },
+  {
+    "username": "Luisjana Muslika",
+    "password": "luisjana",
+    "role": "admin"
+  },
+  {
+    "username": "Rajdona Velija",
+    "password": "123",
+    "role": "konsumator"
+  },
+  {
+    "username": "Dajana Beqiraj",
+    "password": "1234",
+    "role": "fermer"
+  },
+  {
+    "username": "Sara Mara",
+    "password": "1234",
+    "role": "konsumator"
+  }
+]
