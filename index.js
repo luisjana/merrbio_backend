@@ -44,8 +44,15 @@ const upload = multer({
   }
 });
 
-// Functions to read and write data in JSON files
-const readData = (file) => JSON.parse(fs.readFileSync(`./data/${file}`, 'utf8'));
+const readData = (file) => {
+  try {
+    return JSON.parse(fs.readFileSync(`./data/${file}`, 'utf8'));
+  } catch (err) {
+    console.error(`Gabim gjatë leximit të skedarit ${file}: `, err);
+    return [];  // Ktheni një listë të zbrazët nëse ndodh gabim
+  }
+};
+
 const writeData = (file, data) => fs.writeFileSync(`./data/${file}`, JSON.stringify(data, null, 2));
 
 // User registration
@@ -145,5 +152,5 @@ const corsOptions = {
   origin: 'https://merrbio-frontend-e2q1s714i-luisjanas-projects.vercel.app/',  // Zëvendësoni me URL-në e frontend-it tuaj
   methods: ['GET', 'POST'],
 };
-app.use(cors(corsOptions));
+
 
