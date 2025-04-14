@@ -7,9 +7,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS me frontend-in tënd
-const cors = require('cors');
-
+// ✅ CORS me wildcard për të lejuar subdomainet e Vercel
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || /^https:\/\/merrbio-frontend.*\.vercel\.app$/.test(origin)) {
@@ -21,24 +19,20 @@ const corsOptions = {
   methods: ['GET', 'POST', 'DELETE'],
   credentials: true,
 };
-
 app.use(cors(corsOptions));
 
-
-
-
-// Middleware për JSON dhe form data
+// ✅ Middleware
 app.use(express.json());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
-// Krijo folderin uploads nëse nuk ekziston
+// ✅ Krijo folderin uploads nëse nuk ekziston
 if (!fs.existsSync('./uploads')) {
   fs.mkdirSync('./uploads');
 }
 
-// Konfigurimi për ngarkimin e imazheve
+// ✅ Konfigurimi për ngarkimin e imazheve
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, './uploads'),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
@@ -56,7 +50,7 @@ const upload = multer({
   }
 });
 
-// Leximi dhe shkrimi në file JSON
+// ✅ Leximi/shkrimi JSON
 const readData = (file) => {
   try {
     return JSON.parse(fs.readFileSync(`./data/${file}`, 'utf8'));
