@@ -9,9 +9,14 @@ const PORT = process.env.PORT || 3001;
 
 // CORS me frontend-in tënd
 const corsOptions = {
-  origin: 'https://merrbio-frontend-ed844fimd-luisjanas-projects.vercel.app/',
+  origin: [
+    'https://merrbio-frontend-ed844fimd-luisjanas-projects.vercel.app',
+    'https://merrbio-frontend-hzx3elswb-luisjanas-projects.vercel.app',
+    'https://merrbio-frontend.vercel.app',
+  ],
   methods: ['GET', 'POST', 'DELETE'],
 };
+
 app.use(cors(corsOptions));
 
 // Middleware për JSON dhe form data
