@@ -8,16 +8,24 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // CORS me frontend-in tënd
+const cors = require('cors');
+
 const corsOptions = {
-  origin: [
-    'https://merrbio-frontend-ed844fimd-luisjanas-projects.vercel.app',
-    'https://merrbio-frontend-hzx3elswb-luisjanas-projects.vercel.app',
-    'https://merrbio-frontend.vercel.app',
-  ],
+  origin: function (origin, callback) {
+    if (!origin || /^https:\/\/merrbio-frontend.*\.vercel\.app$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'DELETE'],
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
+
+
+
 
 // Middleware për JSON dhe form data
 app.use(express.json());
