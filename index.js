@@ -10,7 +10,6 @@ const PORT = process.env.PORT || 3001;
 const sequelize = require('./db');
 const User = require('./models/User');
 
-// ✅ Sinkronizo databazën
 sequelize.sync().then(() => {
   console.log('📦 Databaza u sinkronizua me sukses!');
 });
@@ -35,10 +34,9 @@ app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
-// ✅ Krijo folderin uploads nëse nuk ekziston
 if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
 
-// ✅ Konfigurimi për ngarkimin e imazheve
+// ✅ Konfigurimi për imazhe
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, './uploads'),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
@@ -56,7 +54,7 @@ const upload = multer({
   }
 });
 
-// ✅ JSON file utility për produkte dhe admin users view
+// ✅ JSON file utils
 const readData = (file) => {
   try {
     return JSON.parse(fs.readFileSync(`./data/${file}`, 'utf8'));
@@ -70,25 +68,30 @@ const writeData = (file, data) => {
   fs.writeFileSync(`./data/${file}`, JSON.stringify(data, null, 2));
 };
 
-// ================= ROUTES =================
+// ============== ROUTES ==============
 
-// 🔐 Regjistrimi me databazë
+// 🔐 Regjistrimi
 app.post('/register', async (req, res) => {
   const { username, password, role } = req.body;
   try {
-    const existing = await User.findOne({ where: { username } });
+    const existing = await User.findOne({ where: { username: username.trim() } });
     if (existing) {
       return res.status(400).json({ message: 'User already exists!' });
     }
 
-    const user = await User.create({ username, password, role });
+    const user = await User.create({
+      username: username.trim(),
+      password: password.trim(),
+      role: role.toLowerCase()
+    });
+
     res.json({ message: 'Registration successful!', username: user.username, role: user.role });
   } catch (err) {
     res.status(500).json({ message: 'Error during registration', error: err.message });
   }
 });
 
-// 🔐 Login me databazë
+// 🔐 Login
 app.post('/login', async (req, res) => {
   const { username, password, role } = req.body;
 
@@ -104,7 +107,7 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Kredencialet janë të pasakta!' });
     }
 
-    if (user.role !== role) {
+    if (user.role.toLowerCase() !== role.toLowerCase()) {
       return res.status(401).json({ message: 'Roli i zgjedhur nuk përputhet me kredencialet!' });
     }
 
@@ -119,7 +122,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// 🧺 Shto produkt me foto
+// 🧺 Shto produkt
 app.post('/products', upload.single('image'), (req, res) => {
   const products = readData('products.json');
   const { emri, pershkrimi, cmimi, fermeri } = req.body;
@@ -131,13 +134,13 @@ app.post('/products', upload.single('image'), (req, res) => {
   res.json({ message: 'Product added successfully!' });
 });
 
-// 🔍 Merr të gjithë përdoruesit nga users.json (për admin panelin ekzistues)
+// 🔍 Merr përdorues nga JSON
 app.get('/users', (req, res) => {
   const users = readData('users.json');
   res.json(users);
 });
 
-// ❌ Fshi përdorues nga users.json (për admin panelin ekzistues)
+// ❌ Fshi përdorues nga JSON
 app.delete('/users/:username', (req, res) => {
   let users = readData('users.json');
   users = users.filter(u => u.username !== req.params.username);
@@ -145,7 +148,7 @@ app.delete('/users/:username', (req, res) => {
   res.json({ message: 'User deleted successfully!' });
 });
 
-// 🔍 Merr produktet nga products.json
+// 🔍 Merr produktet
 app.get('/products', (req, res) => {
   try {
     const products = readData('products.json');
