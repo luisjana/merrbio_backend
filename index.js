@@ -7,7 +7,15 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ✅ CORS me wildcard për të lejuar subdomainet e Vercel
+const sequelize = require('./db');
+const User = require('./models/User');
+
+// ✅ Sinkronizo databazën
+sequelize.sync().then(() => {
+  console.log('📦 Databaza u sinkronizua me sukses!');
+});
+
+// ✅ CORS për frontendin në Vercel
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || /^https:\/\/merrbio-frontend.*\.vercel\.app$/.test(origin)) {
@@ -28,9 +36,7 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
 // ✅ Krijo folderin uploads nëse nuk ekziston
-if (!fs.existsSync('./uploads')) {
-  fs.mkdirSync('./uploads');
-}
+if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
 
 // ✅ Konfigurimi për ngarkimin e imazheve
 const storage = multer.diskStorage({
@@ -50,7 +56,7 @@ const upload = multer({
   }
 });
 
-// ✅ Leximi/shkrimi JSON
+// ✅ JSON file utility për produkte dhe admin users view
 const readData = (file) => {
   try {
     return JSON.parse(fs.readFileSync(`./data/${file}`, 'utf8'));
@@ -66,28 +72,33 @@ const writeData = (file, data) => {
 
 // ================= ROUTES =================
 
-// 🔐 Regjistrimi
-app.post('/register', (req, res) => {
-  const users = readData('users.json');
+// 🔐 Regjistrimi me databazë
+app.post('/register', async (req, res) => {
   const { username, password, role } = req.body;
+  try {
+    const existing = await User.findOne({ where: { username } });
+    if (existing) {
+      return res.status(400).json({ message: 'User already exists!' });
+    }
 
-  console.log('Kërkesë për /register:', req.body);
-
-  if (users.find(u => u.username === username)) {
-    return res.status(400).json({ message: 'User already exists!' });
+    const user = await User.create({ username, password, role });
+    res.json({ message: 'Registration successful!', username: user.username, role: user.role });
+  } catch (err) {
+    res.status(500).json({ message: 'Error during registration', error: err.message });
   }
-
-  users.push({ username, password, role });
-  writeData('users.json', users);
-  res.json({ message: 'Registration successful!', role, username });
 });
 
-// 🔐 Login
-app.post('/login', (req, res) => {
-  const users = readData('users.json');
+// 🔐 Login me databazë
+app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  const user = users.find(u => u.username === username && u.password === password);
+  const user = await User.findOne({
+    where: {
+      username: username.trim(),
+      password: password.trim()
+    }
+  });
+
   if (!user) return res.status(401).json({ message: 'Invalid credentials!' });
 
   res.json({ message: 'Login successful!', role: user.role, username: user.username });
@@ -105,13 +116,13 @@ app.post('/products', upload.single('image'), (req, res) => {
   res.json({ message: 'Product added successfully!' });
 });
 
-// 🔍 Merr të gjithë përdoruesit
+// 🔍 Merr të gjithë përdoruesit nga users.json (për admin panelin ekzistues)
 app.get('/users', (req, res) => {
   const users = readData('users.json');
   res.json(users);
 });
 
-// ❌ Fshi përdorues sipas username
+// ❌ Fshi përdorues nga users.json (për admin panelin ekzistues)
 app.delete('/users/:username', (req, res) => {
   let users = readData('users.json');
   users = users.filter(u => u.username !== req.params.username);
@@ -119,7 +130,7 @@ app.delete('/users/:username', (req, res) => {
   res.json({ message: 'User deleted successfully!' });
 });
 
-// 🔍 Merr të gjitha produktet
+// 🔍 Merr produktet nga products.json
 app.get('/products', (req, res) => {
   try {
     const products = readData('products.json');
