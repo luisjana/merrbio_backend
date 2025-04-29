@@ -90,18 +90,33 @@ app.post('/register', async (req, res) => {
 
 // 🔐 Login me databazë
 app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, role } = req.body;
 
-  const user = await User.findOne({
-    where: {
-      username: username.trim(),
-      password: password.trim()
+  try {
+    const user = await User.findOne({
+      where: {
+        username: username.trim(),
+        password: password.trim()
+      }
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'Kredencialet janë të pasakta!' });
     }
-  });
 
-  if (!user) return res.status(401).json({ message: 'Invalid credentials!' });
+    if (user.role !== role) {
+      return res.status(401).json({ message: 'Roli i zgjedhur nuk përputhet me kredencialet!' });
+    }
 
-  res.json({ message: 'Login successful!', role: user.role, username: user.username });
+    res.json({
+      message: 'Hyrja u krye me sukses!',
+      role: user.role,
+      username: user.username
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë hyrjes', error: err.message });
+  }
 });
 
 // 🧺 Shto produkt me foto
