@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3001;
 
 const sequelize = require('./db');
 const User = require('./models/User');
+const Product = require('./models/Product');
 
 sequelize.sync().then(() => {
   console.log('📦 Databaza u sinkronizua me sukses!');
@@ -122,17 +123,26 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// 🧺 Shto produkt
-app.post('/products', upload.single('image'), (req, res) => {
-  const products = readData('products.json');
-  const { emri, pershkrimi, cmimi, fermeri } = req.body;
-  const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
+app.post('/products', upload.single('image'), async (req, res) => {
+  try {
+    const { emri, pershkrimi, cmimi, fermeri } = req.body;
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
 
-  const product = { emri, pershkrimi, cmimi, fermeri, image: imageUrl };
-  products.push(product);
-  writeData('products.json', products);
-  res.json({ message: 'Product added successfully!' });
+    const newProduct = await Product.create({
+      emri,
+      pershkrimi,
+      cmimi,
+      fermeri,
+      image: imageUrl,
+    });
+
+    res.json({ message: 'Produkti u shtua me sukses!', product: newProduct });
+  } catch (err) {
+    console.error('Gabim gjatë shtimit të produktit:', err);
+    res.status(500).json({ message: 'Gabim gjatë shtimit të produktit' });
+  }
 });
+
 
 app.get('/users', async (req, res) => {
   try {
@@ -181,15 +191,52 @@ app.delete('/users/:username', async (req, res) => {
 });
 
 
-// 🔍 Merr produktet
-app.get('/products', (req, res) => {
+app.get('/products', async (req, res) => {
   try {
-    const products = readData('products.json');
+    const products = await Product.findAll();
     res.json(products);
   } catch (err) {
-    res.status(500).json({ message: 'Error loading products' });
+    console.error('Gabim gjatë marrjes së produkteve:', err);
+    res.status(500).json({ message: 'Gabim gjatë marrjes së produkteve' });
   }
 });
+app.delete('/products/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const deleted = await Product.destroy({ where: { id } });
+
+    if (deleted) {
+      res.json({ message: 'Produkti u fshi me sukses!' });
+    } else {
+      res.status(404).json({ message: 'Produkti nuk u gjet!' });
+    }
+  } catch (err) {
+    console.error('Gabim gjatë fshirjes së produktit:', err);
+    res.status(500).json({ message: 'Gabim gjatë fshirjes së produktit' });
+  }
+});
+app.put('/products/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { emri, pershkrimi, cmimi } = req.body;
+
+    const updated = await Product.update(
+      { emri, pershkrimi, cmimi },
+      { where: { id } }
+    );
+
+    if (updated[0] > 0) {
+      res.json({ message: 'Produkti u përditësua me sukses!' });
+    } else {
+      res.status(404).json({ message: 'Produkti nuk u gjet!' });
+    }
+  } catch (err) {
+    console.error('Gabim gjatë përditësimit të produktit:', err);
+    res.status(500).json({ message: 'Gabim gjatë përditësimit të produktit' });
+  }
+});
+
 
 // ================= SERVER =================
 app.listen(PORT, () => {
