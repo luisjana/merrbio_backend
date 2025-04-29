@@ -134,19 +134,52 @@ app.post('/products', upload.single('image'), (req, res) => {
   res.json({ message: 'Product added successfully!' });
 });
 
-// 🔍 Merr përdorues nga JSON
-app.get('/users', (req, res) => {
-  const users = readData('users.json');
-  res.json(users);
+app.get('/users', async (req, res) => {
+  try {
+    const users = await User.findAll();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë marrjes së përdoruesve', error: err.message });
+  }
+});
+app.post('/users', async (req, res) => {
+  const { username, password, role } = req.body;
+
+  try {
+    const existing = await User.findOne({ where: { username: username.trim() } });
+    if (existing) {
+      return res.status(400).json({ message: 'Përdoruesi ekziston!' });
+    }
+
+    const user = await User.create({
+      username: username.trim(),
+      password: password.trim(),
+      role: role.toLowerCase()
+    });
+
+    res.json({ message: 'Përdoruesi u shtua me sukses!', user });
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë shtimit', error: err.message });
+  }
 });
 
-// ❌ Fshi përdorues nga JSON
-app.delete('/users/:username', (req, res) => {
-  let users = readData('users.json');
-  users = users.filter(u => u.username !== req.params.username);
-  writeData('users.json', users);
-  res.json({ message: 'User deleted successfully!' });
+
+app.delete('/users/:username', async (req, res) => {
+  try {
+    const deleted = await User.destroy({
+      where: { username: req.params.username }
+    });
+
+    if (deleted) {
+      res.json({ message: 'Përdoruesi u fshi me sukses!' });
+    } else {
+      res.status(404).json({ message: 'Përdoruesi nuk u gjet!' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë fshirjes', error: err.message });
+  }
 });
+
 
 // 🔍 Merr produktet
 app.get('/products', (req, res) => {
