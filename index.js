@@ -1,19 +1,17 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const fs = require('fs');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
-const app = express();
-const PORT = process.env.PORT || 3001;
+require('dotenv').config();
 
+const { storage } = require('./cloudinaryConfig'); // ✅ përdor storage nga cloudinaryConfig
 const sequelize = require('./db');
 const User = require('./models/User');
 const Product = require('./models/Product');
 
-sequelize.sync().then(() => {
-  console.log('📦 Databaza u sinkronizua me sukses!');
-});
+const app = express();
+const PORT = process.env.PORT || 3001;
 
 // ✅ CORS për frontendin në Vercel
 const corsOptions = {
@@ -33,16 +31,8 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
-app.use('/uploads', express.static('uploads'));
 
-// ✅ Sigurohu që folderi uploads ekziston
-if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
-
-// ✅ Konfigurimi për ngarkimin e fotove
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, './uploads'),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
-});
+// ✅ Konfigurimi i multer me Cloudinary
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -55,7 +45,12 @@ const upload = multer({
   }
 });
 
-// ========== ROUTES ==========
+// ✅ Sinkronizimi i databazës
+sequelize.sync().then(() => {
+  console.log('📦 Databaza u sinkronizua me sukses!');
+});
+
+// ================= ROUTES =================
 
 // 🔐 Regjistrimi
 app.post('/register', async (req, res) => {
@@ -104,7 +99,7 @@ app.post('/login', async (req, res) => {
 app.post('/products', upload.single('image'), async (req, res) => {
   try {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
+    const imageUrl = req.file ? req.file.path : '';
 
     const newProduct = await Product.create({
       emri,
@@ -127,8 +122,7 @@ app.get('/products', async (req, res) => {
     const products = await Product.findAll();
     res.json(products);
   } catch (err) {
-    console.error('Gabim gjatë marrjes së produkteve:', err);
-    res.status(500).json({ message: 'Gabim gjatë marrjes së produkteve' });
+    res.status(500).json({ message: 'Gabim gjatë marrjes së produkteve', error: err.message });
   }
 });
 
@@ -142,8 +136,7 @@ app.delete('/products/:id', async (req, res) => {
       res.status(404).json({ message: 'Produkti nuk u gjet!' });
     }
   } catch (err) {
-    console.error('Gabim gjatë fshirjes së produktit:', err);
-    res.status(500).json({ message: 'Gabim gjatë fshirjes së produktit' });
+    res.status(500).json({ message: 'Gabim gjatë fshirjes së produktit', error: err.message });
   }
 });
 
@@ -155,27 +148,20 @@ app.put('/products/:id', upload.single('image'), async (req, res) => {
 
     const product = await Product.findByPk(id);
     if (!product) return res.status(404).json({ message: 'Produkti nuk u gjet!' });
-    
-    // Nëse ka file të ri, përdor atë, përndryshe lë të vjetrin
+
     let imageUrl = product.image;
-    if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
-    }
-    
-    // Përditëso të gjitha fushat (edhe nëse ndonjë nuk ka ndryshuar)
+    if (req.file) imageUrl = req.file.path;
+
     await product.update({
       emri: emri || product.emri,
       pershkrimi: pershkrimi || product.pershkrimi,
       cmimi: cmimi || product.cmimi,
       image: imageUrl
     });
-    
-   
-    
+
     res.json({ message: 'Produkti u përditësua me sukses!', product });
   } catch (err) {
-    console.error('Gabim gjatë përditësimit të produktit:', err);
-    res.status(500).json({ message: 'Gabim gjatë përditësimit të produktit' });
+    res.status(500).json({ message: 'Gabim gjatë përditësimit të produktit', error: err.message });
   }
 });
 
