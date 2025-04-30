@@ -134,8 +134,10 @@ app.put('/products/:id', upload.single('image'), async (req, res) => {
     const product = await Product.findByPk(id);
     if (!product) return res.status(404).json({ message: 'Produkti nuk u gjet!' });
 
+    // ✅ Kontroll për Cloudinary URL
     let imageUrl = product.image;
-    if (req.file) imageUrl = req.file.path;
+    if (req.file && req.file.path) imageUrl = req.file.path;
+    else if (req.file && req.file.secure_url) imageUrl = req.file.secure_url;
 
     await product.update({
       emri: emri || product.emri,
@@ -146,9 +148,15 @@ app.put('/products/:id', upload.single('image'), async (req, res) => {
 
     res.json({ message: 'Produkti u përditësua me sukses!', product });
   } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë përditësimit të produktit', error: err.message });
+    console.error('Gabim gjatë përditësimit të produktit:', err);
+    res.status(500).json({ 
+      message: 'Gabim gjatë përditësimit të produktit', 
+      error: err.message, 
+      stack: err.stack 
+    });
   }
 });
+
 
 // 🗑️ Fshi produkt
 app.delete('/products/:id', async (req, res) => {
