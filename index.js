@@ -24,7 +24,7 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'DELETE'],
+  methods: ['GET', 'POST', 'DELETE', 'PUT'],
   credentials: true,
 };
 app.use(cors(corsOptions));
@@ -35,14 +35,14 @@ app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
+// ✅ Sigurohu që folderi uploads ekziston
 if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
 
-// ✅ Konfigurimi për imazhe
+// ✅ Konfigurimi për ngarkimin e fotove
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, './uploads'),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
-
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -55,21 +55,7 @@ const upload = multer({
   }
 });
 
-// ✅ JSON file utils
-const readData = (file) => {
-  try {
-    return JSON.parse(fs.readFileSync(`./data/${file}`, 'utf8'));
-  } catch (err) {
-    console.error(`Error reading ${file}: `, err);
-    return [];
-  }
-};
-
-const writeData = (file, data) => {
-  fs.writeFileSync(`./data/${file}`, JSON.stringify(data, null, 2));
-};
-
-// ============== ROUTES ==============
+// ========== ROUTES ==========
 
 // 🔐 Regjistrimi
 app.post('/register', async (req, res) => {
@@ -95,7 +81,6 @@ app.post('/register', async (req, res) => {
 // 🔐 Login
 app.post('/login', async (req, res) => {
   const { username, password, role } = req.body;
-
   try {
     const user = await User.findOne({
       where: {
@@ -104,25 +89,18 @@ app.post('/login', async (req, res) => {
       }
     });
 
-    if (!user) {
-      return res.status(401).json({ message: 'Kredencialet janë të pasakta!' });
-    }
-
+    if (!user) return res.status(401).json({ message: 'Kredencialet janë të pasakta!' });
     if (user.role.toLowerCase() !== role.toLowerCase()) {
-      return res.status(401).json({ message: 'Roli i zgjedhur nuk përputhet me kredencialet!' });
+      return res.status(401).json({ message: 'Roli nuk përputhet me kredencialet!' });
     }
 
-    res.json({
-      message: 'Hyrja u krye me sukses!',
-      role: user.role,
-      username: user.username
-    });
-
+    res.json({ message: 'Hyrja u krye me sukses!', role: user.role, username: user.username });
   } catch (err) {
     res.status(500).json({ message: 'Gabim gjatë hyrjes', error: err.message });
   }
 });
 
+// 🧺 Shto produkt
 app.post('/products', upload.single('image'), async (req, res) => {
   try {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
@@ -143,54 +121,7 @@ app.post('/products', upload.single('image'), async (req, res) => {
   }
 });
 
-
-app.get('/users', async (req, res) => {
-  try {
-    const users = await User.findAll();
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë marrjes së përdoruesve', error: err.message });
-  }
-});
-app.post('/users', async (req, res) => {
-  const { username, password, role } = req.body;
-
-  try {
-    const existing = await User.findOne({ where: { username: username.trim() } });
-    if (existing) {
-      return res.status(400).json({ message: 'Përdoruesi ekziston!' });
-    }
-
-    const user = await User.create({
-      username: username.trim(),
-      password: password.trim(),
-      role: role.toLowerCase()
-    });
-
-    res.json({ message: 'Përdoruesi u shtua me sukses!', user });
-  } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë shtimit', error: err.message });
-  }
-});
-
-
-app.delete('/users/:username', async (req, res) => {
-  try {
-    const deleted = await User.destroy({
-      where: { username: req.params.username }
-    });
-
-    if (deleted) {
-      res.json({ message: 'Përdoruesi u fshi me sukses!' });
-    } else {
-      res.status(404).json({ message: 'Përdoruesi nuk u gjet!' });
-    }
-  } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë fshirjes', error: err.message });
-  }
-});
-
-
+// 🧺 Merr të gjithë produktet
 app.get('/products', async (req, res) => {
   try {
     const products = await Product.findAll();
@@ -200,12 +131,11 @@ app.get('/products', async (req, res) => {
     res.status(500).json({ message: 'Gabim gjatë marrjes së produkteve' });
   }
 });
+
+// 🧺 Fshi produkt
 app.delete('/products/:id', async (req, res) => {
   try {
-    const id = req.params.id;
-
-    const deleted = await Product.destroy({ where: { id } });
-
+    const deleted = await Product.destroy({ where: { id: req.params.id } });
     if (deleted) {
       res.json({ message: 'Produkti u fshi me sukses!' });
     } else {
@@ -216,29 +146,62 @@ app.delete('/products/:id', async (req, res) => {
     res.status(500).json({ message: 'Gabim gjatë fshirjes së produktit' });
   }
 });
-app.put('/products/:id', async (req, res) => {
+
+// 🔄 Përditëso produkt me ose pa foto
+app.put('/products/:id', upload.single('image'), async (req, res) => {
   try {
     const id = req.params.id;
     const { emri, pershkrimi, cmimi } = req.body;
 
-    const updated = await Product.update(
-      { emri, pershkrimi, cmimi },
-      { where: { id } }
-    );
+    const product = await Product.findByPk(id);
+    if (!product) return res.status(404).json({ message: 'Produkti nuk u gjet!' });
 
-    if (updated[0] > 0) {
-      res.json({ message: 'Produkti u përditësua me sukses!' });
-    } else {
-      res.status(404).json({ message: 'Produkti nuk u gjet!' });
-    }
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : product.image;
+
+    await product.update({ emri, pershkrimi, cmimi, image: imageUrl });
+    res.json({ message: 'Produkti u përditësua me sukses!', product });
   } catch (err) {
     console.error('Gabim gjatë përditësimit të produktit:', err);
     res.status(500).json({ message: 'Gabim gjatë përditësimit të produktit' });
   }
 });
 
+// 👥 Merr të gjithë përdoruesit
+app.get('/users', async (req, res) => {
+  try {
+    const users = await User.findAll();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë marrjes së përdoruesve', error: err.message });
+  }
+});
+
+// 👥 Shto përdorues
+app.post('/users', async (req, res) => {
+  const { username, password, role } = req.body;
+  try {
+    const existing = await User.findOne({ where: { username: username.trim() } });
+    if (existing) return res.status(400).json({ message: 'Përdoruesi ekziston!' });
+
+    const user = await User.create({ username, password, role });
+    res.json({ message: 'Përdoruesi u shtua me sukses!', user });
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë shtimit', error: err.message });
+  }
+});
+
+// 👥 Fshi përdorues
+app.delete('/users/:username', async (req, res) => {
+  try {
+    const deleted = await User.destroy({ where: { username: req.params.username } });
+    if (deleted) res.json({ message: 'Përdoruesi u fshi me sukses!' });
+    else res.status(404).json({ message: 'Përdoruesi nuk u gjet!' });
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë fshirjes', error: err.message });
+  }
+});
 
 // ================= SERVER =================
 app.listen(PORT, () => {
-  console.log(`MerrBio backend running on http://localhost:${PORT}`);
+  console.log(`🚀 MerrBio backend running on http://localhost:${PORT}`);
 });
