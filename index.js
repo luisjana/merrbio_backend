@@ -114,6 +114,16 @@ app.post('/products', upload.single('image'), async (req, res) => {
     res.status(500).json({ message: 'Gabim gjatë shtimit të produktit', error: err.message });
   }
 });
+// 📦 Merr të gjithë produktet
+app.get('/products', async (req, res) => {
+  try {
+    const products = await Product.findAll();
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë marrjes së produkteve', error: err.message });
+  }
+});
+
 
 // 🔄 Përditëso produkt
 app.put('/products/:id', upload.single('image'), async (req, res) => {
