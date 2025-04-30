@@ -155,10 +155,23 @@ app.put('/products/:id', upload.single('image'), async (req, res) => {
 
     const product = await Product.findByPk(id);
     if (!product) return res.status(404).json({ message: 'Produkti nuk u gjet!' });
-
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : product.image;
-
-    await product.update({ emri, pershkrimi, cmimi, image: imageUrl });
+    
+    // Nëse ka file të ri, përdor atë, përndryshe lë të vjetrin
+    let imageUrl = product.image;
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+    }
+    
+    // Përditëso të gjitha fushat (edhe nëse ndonjë nuk ka ndryshuar)
+    await product.update({
+      emri: emri || product.emri,
+      pershkrimi: pershkrimi || product.pershkrimi,
+      cmimi: cmimi || product.cmimi,
+      image: imageUrl
+    });
+    
+   
+    
     res.json({ message: 'Produkti u përditësua me sukses!', product });
   } catch (err) {
     console.error('Gabim gjatë përditësimit të produktit:', err);
