@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 require('dotenv').config();
 
-const { storage } = require('./cloudinaryConfig'); // ✅ përdor storage nga cloudinaryConfig
+const { storage } = require('./cloudinaryConfig'); // ✅ storage nga config
 const sequelize = require('./db');
 const User = require('./models/User');
 const Product = require('./models/Product');
@@ -111,36 +111,11 @@ app.post('/products', upload.single('image'), async (req, res) => {
 
     res.json({ message: 'Produkti u shtua me sukses!', product: newProduct });
   } catch (err) {
-    console.error('Gabim gjatë shtimit të produktit:', err);
-    res.status(500).json({ message: 'Gabim gjatë shtimit të produktit' });
+    res.status(500).json({ message: 'Gabim gjatë shtimit të produktit', error: err.message });
   }
 });
 
-// 🧺 Merr të gjithë produktet
-app.get('/products', async (req, res) => {
-  try {
-    const products = await Product.findAll();
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë marrjes së produkteve', error: err.message });
-  }
-});
-
-// 🧺 Fshi produkt
-app.delete('/products/:id', async (req, res) => {
-  try {
-    const deleted = await Product.destroy({ where: { id: req.params.id } });
-    if (deleted) {
-      res.json({ message: 'Produkti u fshi me sukses!' });
-    } else {
-      res.status(404).json({ message: 'Produkti nuk u gjet!' });
-    }
-  } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë fshirjes së produktit', error: err.message });
-  }
-});
-
-// 🔄 Përditëso produkt me ose pa foto
+// 🔄 Përditëso produkt
 app.put('/products/:id', upload.single('image'), async (req, res) => {
   try {
     const id = req.params.id;
@@ -165,6 +140,17 @@ app.put('/products/:id', upload.single('image'), async (req, res) => {
   }
 });
 
+// 🗑️ Fshi produkt
+app.delete('/products/:id', async (req, res) => {
+  try {
+    const deleted = await Product.destroy({ where: { id: req.params.id } });
+    if (deleted) res.json({ message: 'Produkti u fshi me sukses!' });
+    else res.status(404).json({ message: 'Produkti nuk u gjet!' });
+  } catch (err) {
+    res.status(500).json({ message: 'Gabim gjatë fshirjes së produktit', error: err.message });
+  }
+});
+
 // 👥 Merr të gjithë përdoruesit
 app.get('/users', async (req, res) => {
   try {
@@ -175,7 +161,7 @@ app.get('/users', async (req, res) => {
   }
 });
 
-// 👥 Shto përdorues
+// 👤 Shto përdorues
 app.post('/users', async (req, res) => {
   const { username, password, role } = req.body;
   try {
@@ -189,7 +175,7 @@ app.post('/users', async (req, res) => {
   }
 });
 
-// 👥 Fshi përdorues
+// ❌ Fshi përdorues
 app.delete('/users/:username', async (req, res) => {
   try {
     const deleted = await User.destroy({ where: { username: req.params.username } });
@@ -200,7 +186,7 @@ app.delete('/users/:username', async (req, res) => {
   }
 });
 
-// ================= SERVER =================
+// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 MerrBio backend running on http://localhost:${PORT}`);
 });
