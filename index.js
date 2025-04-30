@@ -129,12 +129,11 @@ app.get('/products', async (req, res) => {
 app.put('/products/:id', upload.single('image'), async (req, res) => {
   try {
     const id = req.params.id;
-    const { emri, pershkrimi, cmimi } = req.body;
+    const { emri, pershkrimi, cmimi, fermeri } = req.body;
 
     const product = await Product.findByPk(id);
     if (!product) return res.status(404).json({ message: 'Produkti nuk u gjet!' });
 
-    // ✅ Kontroll për Cloudinary URL
     let imageUrl = product.image;
     if (req.file && req.file.path) imageUrl = req.file.path;
     else if (req.file && req.file.secure_url) imageUrl = req.file.secure_url;
@@ -143,16 +142,17 @@ app.put('/products/:id', upload.single('image'), async (req, res) => {
       emri: emri || product.emri,
       pershkrimi: pershkrimi || product.pershkrimi,
       cmimi: cmimi || product.cmimi,
+      fermeri: fermeri || product.fermeri, // ✅ kjo ishte mungesë kritike
       image: imageUrl
     });
 
     res.json({ message: 'Produkti u përditësua me sukses!', product });
   } catch (err) {
     console.error('Gabim gjatë përditësimit të produktit:', err);
-    res.status(500).json({ 
-      message: 'Gabim gjatë përditësimit të produktit', 
-      error: err.message, 
-      stack: err.stack 
+    res.status(500).json({
+      message: 'Gabim gjatë përditësimit të produktit',
+      error: err.message,
+      stack: err.stack
     });
   }
 });
