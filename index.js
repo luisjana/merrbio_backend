@@ -8,7 +8,7 @@ require('dotenv').config();
 const { storage } = require('./cloudinaryConfig');
 const sequelize = require('./db');
 const User = require('./models/User');
-const Product = require('./models/Product');
+const productController = require('./controllers/productController');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,8 +31,6 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
-
-// ✅ Shërbe folderin uploads/ si publik (për rastet lokale pa cloudinary)
 app.use('/uploads', express.static('uploads'));
 
 // ✅ Konfigurimi i multer me Cloudinary
@@ -45,7 +43,7 @@ const upload = multer({
     const mimeType = fileTypes.test(file.mimetype);
     if (extname && mimeType) return cb(null, true);
     cb('Only image files can be uploaded!');
-  }
+  },
 });
 
 // ✅ Sinkronizimi i databazës
@@ -65,7 +63,7 @@ app.post('/register', async (req, res) => {
     const user = await User.create({
       username: username.trim(),
       password: password.trim(),
-      role: role.toLowerCase()
+      role: role.toLowerCase(),
     });
 
     res.json({ message: 'Registration successful!', username: user.username, role: user.role });
@@ -89,77 +87,11 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// 🧺 Shto produkt
-app.post('/products', upload.single('image'), async (req, res) => {
-  try {
-    const { emri, pershkrimi, cmimi, fermeri } = req.body;
-    if (!fermeri) return res.status(400).json({ message: 'Fusha "fermeri" është e detyrueshme' });
-
-    const imageUrl = req.file ? req.file.secure_url || req.file.path : '';
-
-    const newProduct = await Product.create({
-      emri,
-      pershkrimi,
-      cmimi,
-      fermeri,
-      image: imageUrl,
-    });
-
-    res.json({ message: 'Produkti u shtua me sukses!', product: newProduct });
-  } catch (err) {
-    console.error('Gabim gjatë shtimit të produktit:', err);
-    res.status(500).json({ message: 'Gabim gjatë shtimit të produktit', error: err.message });
-  }
-});
-
-// 📦 Merr të gjithë produktet
-app.get('/products', async (req, res) => {
-  try {
-    const products = await Product.findAll();
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë marrjes së produkteve', error: err.message });
-  }
-});
-
-// 🔄 Përditëso produkt
-app.put('/products/:id', upload.single('image'), async (req, res) => {
-  try {
-    const id = req.params.id;
-    const { emri, pershkrimi, cmimi, fermeri } = req.body;
-
-    const product = await Product.findByPk(id);
-    if (!product) return res.status(404).json({ message: 'Produkti nuk u gjet!' });
-
-    let imageUrl = product.image;
-    if (req.file && req.file.secure_url) imageUrl = req.file.secure_url;
-    else if (req.file && req.file.path) imageUrl = req.file.path;
-
-    await product.update({
-      emri: emri || product.emri,
-      pershkrimi: pershkrimi || product.pershkrimi,
-      cmimi: cmimi || product.cmimi,
-      fermeri: fermeri || product.fermeri,
-      image: imageUrl
-    });
-
-    res.json({ message: 'Produkti u përditësua me sukses!', product });
-  } catch (err) {
-    console.error('Gabim gjatë përditësimit të produktit:', err);
-    res.status(500).json({ message: 'Gabim gjatë përditësimit të produktit', error: err.message });
-  }
-});
-
-// 🗑️ Fshi produkt
-app.delete('/products/:id', async (req, res) => {
-  try {
-    const deleted = await Product.destroy({ where: { id: req.params.id } });
-    if (deleted) res.json({ message: 'Produkti u fshi me sukses!' });
-    else res.status(404).json({ message: 'Produkti nuk u gjet!' });
-  } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë fshirjes së produktit', error: err.message });
-  }
-});
+// 📦 PRODUCT ROUTES ME CONTROLLER
+app.get('/products', productController.getAllProducts);
+app.post('/products', upload.single('image'), productController.createProduct);
+app.put('/products/:id', upload.single('image'), productController.updateProduct);
+app.delete('/products/:id', productController.deleteProduct);
 
 // 👥 Merr përdoruesit
 app.get('/users', async (req, res) => {
