@@ -16,9 +16,9 @@ exports.createProduct = async (req, res) => {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
     if (!fermeri) return res.status(400).json({ message: 'Fusha "fermeri" është e detyrueshme' });
 
-    console.log('File info:', req.file); // debug
+    console.log('File info:', req.file); // debug për të parë çfarë kthen Cloudinary
 
-    const imageUrl = req.file && req.file.path ? req.file.path : (req.file && req.file.secure_url ? req.file.secure_url : '');
+    const imageUrl = req.file && req.file.path ? req.file.path : '';
 
     const newProduct = await Product.create({
       emri,
@@ -45,7 +45,7 @@ exports.updateProduct = async (req, res) => {
     if (!product) return res.status(404).json({ message: 'Produkti nuk u gjet!' });
 
     let imageUrl = product.image;
-    if (req.file && req.file.secure_url) imageUrl = req.file.secure_url;
+    if (req.file && req.file.path) imageUrl = req.file.path;
 
     await product.update({
       emri: emri || product.emri,
