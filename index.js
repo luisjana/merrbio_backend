@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 require('dotenv').config();
 
-const { storage } = require('./cloudinaryConfig'); // ✅ storage nga config
+const { storage } = require('./cloudinaryConfig');
 const sequelize = require('./db');
 const User = require('./models/User');
 const Product = require('./models/Product');
@@ -32,6 +32,9 @@ app.use(express.json());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
+// ✅ Shërbe folderin uploads/ si publik (për rastet lokale pa cloudinary)
+app.use('/uploads', express.static('uploads'));
+
 // ✅ Konfigurimi i multer me Cloudinary
 const upload = multer({
   storage,
@@ -57,9 +60,7 @@ app.post('/register', async (req, res) => {
   const { username, password, role } = req.body;
   try {
     const existing = await User.findOne({ where: { username: username.trim() } });
-    if (existing) {
-      return res.status(400).json({ message: 'User already exists!' });
-    }
+    if (existing) return res.status(400).json({ message: 'User already exists!' });
 
     const user = await User.create({
       username: username.trim(),
@@ -77,18 +78,11 @@ app.post('/register', async (req, res) => {
 app.post('/login', async (req, res) => {
   const { username, password, role } = req.body;
   try {
-    const user = await User.findOne({
-      where: {
-        username: username.trim(),
-        password: password.trim()
-      }
-    });
-
+    const user = await User.findOne({ where: { username: username.trim(), password: password.trim() } });
     if (!user) return res.status(401).json({ message: 'Kredencialet janë të pasakta!' });
     if (user.role.toLowerCase() !== role.toLowerCase()) {
       return res.status(401).json({ message: 'Roli nuk përputhet me kredencialet!' });
     }
-
     res.json({ message: 'Hyrja u krye me sukses!', role: user.role, username: user.username });
   } catch (err) {
     res.status(500).json({ message: 'Gabim gjatë hyrjes', error: err.message });
@@ -99,10 +93,9 @@ app.post('/login', async (req, res) => {
 app.post('/products', upload.single('image'), async (req, res) => {
   try {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
-    if (!fermeri) {
-      return res.status(400).json({ message: 'Fusha "fermeri" është e detyrueshme' });
-    }
-    const imageUrl = req.file ? req.file.path : '';
+    if (!fermeri) return res.status(400).json({ message: 'Fusha "fermeri" është e detyrueshme' });
+
+    const imageUrl = req.file ? req.file.secure_url || req.file.path : '';
 
     const newProduct = await Product.create({
       emri,
@@ -129,7 +122,6 @@ app.get('/products', async (req, res) => {
   }
 });
 
-
 // 🔄 Përditëso produkt
 app.put('/products/:id', upload.single('image'), async (req, res) => {
   try {
@@ -140,28 +132,23 @@ app.put('/products/:id', upload.single('image'), async (req, res) => {
     if (!product) return res.status(404).json({ message: 'Produkti nuk u gjet!' });
 
     let imageUrl = product.image;
-    if (req.file && req.file.path) imageUrl = req.file.path;
-    else if (req.file && req.file.secure_url) imageUrl = req.file.secure_url;
+    if (req.file && req.file.secure_url) imageUrl = req.file.secure_url;
+    else if (req.file && req.file.path) imageUrl = req.file.path;
 
     await product.update({
       emri: emri || product.emri,
       pershkrimi: pershkrimi || product.pershkrimi,
       cmimi: cmimi || product.cmimi,
-      fermeri: fermeri || product.fermeri, // ✅ kjo ishte mungesë kritike
+      fermeri: fermeri || product.fermeri,
       image: imageUrl
     });
 
     res.json({ message: 'Produkti u përditësua me sukses!', product });
   } catch (err) {
     console.error('Gabim gjatë përditësimit të produktit:', err);
-    res.status(500).json({
-      message: 'Gabim gjatë përditësimit të produktit',
-      error: err.message,
-      stack: err.stack
-    });
+    res.status(500).json({ message: 'Gabim gjatë përditësimit të produktit', error: err.message });
   }
 });
-
 
 // 🗑️ Fshi produkt
 app.delete('/products/:id', async (req, res) => {
@@ -174,7 +161,7 @@ app.delete('/products/:id', async (req, res) => {
   }
 });
 
-// 👥 Merr të gjithë përdoruesit
+// 👥 Merr përdoruesit
 app.get('/users', async (req, res) => {
   try {
     const users = await User.findAll();
