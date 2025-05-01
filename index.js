@@ -99,6 +99,9 @@ app.post('/login', async (req, res) => {
 app.post('/products', upload.single('image'), async (req, res) => {
   try {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
+    if (!fermeri) {
+      return res.status(400).json({ message: 'Fusha "fermeri" është e detyrueshme' });
+    }
     const imageUrl = req.file ? req.file.path : '';
 
     const newProduct = await Product.create({
@@ -111,9 +114,11 @@ app.post('/products', upload.single('image'), async (req, res) => {
 
     res.json({ message: 'Produkti u shtua me sukses!', product: newProduct });
   } catch (err) {
+    console.error('Gabim gjatë shtimit të produktit:', err);
     res.status(500).json({ message: 'Gabim gjatë shtimit të produktit', error: err.message });
   }
 });
+
 // 📦 Merr të gjithë produktet
 app.get('/products', async (req, res) => {
   try {
