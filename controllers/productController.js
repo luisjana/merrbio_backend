@@ -14,7 +14,8 @@ exports.createProduct = async (req, res) => {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
     if (!fermeri) return res.status(400).json({ message: 'Field "fermeri" is required' });
 
-    const imageUrl = req.file ? req.file.path : null;
+    const imageUrl = req.file ? (req.file.secure_url || req.file.path) : null;
+
 
     const product = await Product.create({
       emri,
