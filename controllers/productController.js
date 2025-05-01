@@ -14,7 +14,7 @@ exports.createProduct = async (req, res) => {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
     if (!fermeri) return res.status(400).json({ message: 'Field "fermeri" is required' });
 
-    const imageUrl = req.file ? (req.file.secure_url || req.file.path) : null;
+    const imageUrl = req.file ? req.file.path : null;
 
 
     const product = await Product.create({
@@ -29,6 +29,10 @@ exports.createProduct = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Error adding product', error: err.message });
   }
+  if (!req.file) {
+    return res.status(400).json({ message: 'Image upload failed or no image provided' });
+  }
+  
 };
 
 exports.updateProduct = async (req, res) => {
