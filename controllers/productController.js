@@ -12,10 +12,11 @@ exports.getAllProducts = async (req, res) => {
 exports.createProduct = async (req, res) => {
   try {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
+
     if (!fermeri) return res.status(400).json({ message: 'Field "fermeri" is required' });
+    if (!req.file) return res.status(400).json({ message: 'Image upload failed or no image provided' });
 
-    const imageUrl = req.file ? req.file.path : null;
-
+    const imageUrl = req.file.path;
 
     const product = await Product.create({
       emri,
@@ -27,13 +28,11 @@ exports.createProduct = async (req, res) => {
 
     res.json({ message: 'Product added successfully', product });
   } catch (err) {
+    console.error('❌ Error adding product:', err);
     res.status(500).json({ message: 'Error adding product', error: err.message });
   }
-  if (!req.file) {
-    return res.status(400).json({ message: 'Image upload failed or no image provided' });
-  }
-  
 };
+
 
 exports.updateProduct = async (req, res) => {
   try {
