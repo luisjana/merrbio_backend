@@ -77,13 +77,13 @@ app.post('/login', async (req, res) => {
   const { username, password, role } = req.body;
   try {
     const user = await User.findOne({ where: { username: username.trim(), password: password.trim() } });
-    if (!user) return res.status(401).json({ message: 'Kredencialet janë të pasakta!' });
+    if (!user) return res.status(401).json({ message: 'Invalid credentials!' });
     if (user.role.toLowerCase() !== role.toLowerCase()) {
-      return res.status(401).json({ message: 'Roli nuk përputhet me kredencialet!' });
+      return res.status(401).json({ message: 'Role does not match credentials!' });
     }
-    res.json({ message: 'Hyrja u krye me sukses!', role: user.role, username: user.username });
+    res.json({ message: 'Login successful!', role: user.role, username: user.username });
   } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë hyrjes', error: err.message });
+    res.status(500).json({ message: 'Error during login', error: err.message });
   }
 });
 
@@ -99,7 +99,7 @@ app.get('/users', async (req, res) => {
     const users = await User.findAll();
     res.json(users);
   } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë marrjes së përdoruesve', error: err.message });
+    res.status(500).json({ message: 'Error fetching users', error: err.message });
   }
 });
 
@@ -108,12 +108,12 @@ app.post('/users', async (req, res) => {
   const { username, password, role } = req.body;
   try {
     const existing = await User.findOne({ where: { username: username.trim() } });
-    if (existing) return res.status(400).json({ message: 'Përdoruesi ekziston!' });
+    if (existing) return res.status(400).json({ message: 'User already exists!' });
 
     const user = await User.create({ username, password, role });
-    res.json({ message: 'Përdoruesi u shtua me sukses!', user });
+    res.json({ message: 'User added successfully!', user });
   } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë shtimit', error: err.message });
+    res.status(500).json({ message: 'Error adding user', error: err.message });
   }
 });
 
@@ -121,10 +121,10 @@ app.post('/users', async (req, res) => {
 app.delete('/users/:username', async (req, res) => {
   try {
     const deleted = await User.destroy({ where: { username: req.params.username } });
-    if (deleted) res.json({ message: 'Përdoruesi u fshi me sukses!' });
-    else res.status(404).json({ message: 'Përdoruesi nuk u gjet!' });
+    if (deleted) res.json({ message: 'User deleted successfully!' });
+    else res.status(404).json({ message: 'User not found!' });
   } catch (err) {
-    res.status(500).json({ message: 'Gabim gjatë fshirjes', error: err.message });
+    res.status(500).json({ message: 'Error deleting user', error: err.message });
   }
 });
 
