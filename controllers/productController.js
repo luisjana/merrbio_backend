@@ -5,7 +5,7 @@ exports.getAllProducts = async (req, res) => {
     const products = await Product.findAll();
     res.json(products);
   } catch (err) {
-    console.error('❌ Error getting products:', err.message, err.stack);
+    console.error('❌ Error getting products:', err);
     res.status(500).json({ message: 'Error getting products', error: err.message });
   }
 };
@@ -14,22 +14,18 @@ exports.createProduct = async (req, res) => {
   try {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
 
-    // Kontrollo nëse mungon fermeri
     if (!fermeri) {
       console.warn('⚠️ Field "fermeri" is missing in request');
       return res.status(400).json({ message: 'Field "fermeri" is required' });
     }
 
-    // Kontrollo nëse mungon file (imazhi)
     if (!req.file) {
       console.warn('⚠️ No image file was uploaded');
       return res.status(400).json({ message: 'Image upload failed or no image provided' });
     }
 
-    // Merr path-in e fotos nga Cloudinary
-    const imageUrl = req.file.path;
+    const imageUrl = req.file.path || req.file.secure_url;
 
-    // Krijo produktin në database
     const product = await Product.create({
       emri,
       pershkrimi,
@@ -38,14 +34,19 @@ exports.createProduct = async (req, res) => {
       image: imageUrl,
     });
 
-    console.log('✅ Product created:', product.id);
+    console.log('✅ Product created:', product.toJSON());
     res.json({ message: 'Product added successfully', product });
   } catch (err) {
-    console.error('❌ Full error object:', JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
-    res.status(500).json({ message: 'Error adding product', error: err.message || 'Unknown error' });
-}
-
-
+    console.error('❌ Error adding product:', {
+      message: err.message,
+      stack: err.stack,
+      full: JSON.stringify(err, Object.getOwnPropertyNames(err), 2),
+    });
+    res.status(500).json({
+      message: 'Error adding product',
+      error: err.message || 'Unknown error',
+    });
+  }
 };
 
 exports.updateProduct = async (req, res) => {
@@ -69,10 +70,10 @@ exports.updateProduct = async (req, res) => {
       image: imageUrl,
     });
 
-    console.log('✅ Product updated:', product.id);
+    console.log('✅ Product updated:', product.toJSON());
     res.json({ message: 'Product updated successfully', product });
   } catch (err) {
-    console.error('❌ Error updating product:', err.message, err.stack);
+    console.error('❌ Error updating product:', err);
     res.status(500).json({ message: 'Error updating product', error: err.message });
   }
 };
@@ -89,7 +90,7 @@ exports.deleteProduct = async (req, res) => {
       res.status(404).json({ message: 'Product not found' });
     }
   } catch (err) {
-    console.error('❌ Error deleting product:', err.message, err.stack);
+    console.error('❌ Error deleting product:', err);
     res.status(500).json({ message: 'Error deleting product', error: err.message });
   }
 };
