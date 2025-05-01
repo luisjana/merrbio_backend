@@ -20,8 +20,8 @@ const Product = sequelize.define('Product', {
   },
   image: {
     type: DataTypes.STRING,
-    allowNull: true,
-  }
+    allowNull: true,  // shumë e rëndësishme për të lejuar pa foto
+  },
 });
 
 module.exports = Product;
