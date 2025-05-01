@@ -41,10 +41,10 @@ exports.createProduct = async (req, res) => {
     console.log('✅ Product created:', product.id);
     res.json({ message: 'Product added successfully', product });
   } catch (err) {
-    console.error('❌ Error adding product:', err.message);
-    console.error('❌ Stack trace:', err.stack);
-    res.status(500).json({ message: 'Error adding product', error: err.message });
+    console.error('❌ Full error object:', JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+    res.status(500).json({ message: 'Error adding product', error: err.message || 'Unknown error' });
 }
+
 
 };
 
