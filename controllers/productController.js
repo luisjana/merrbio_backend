@@ -16,7 +16,9 @@ exports.createProduct = async (req, res) => {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
     if (!fermeri) return res.status(400).json({ message: 'Fusha "fermeri" është e detyrueshme' });
 
-    const imageUrl = req.file ? req.file.secure_url || req.file.path : '';
+    console.log('File info:', req.file); // debug
+
+    const imageUrl = req.file && req.file.path ? req.file.path : (req.file && req.file.secure_url ? req.file.secure_url : '');
 
     const newProduct = await Product.create({
       emri,
@@ -44,7 +46,6 @@ exports.updateProduct = async (req, res) => {
 
     let imageUrl = product.image;
     if (req.file && req.file.secure_url) imageUrl = req.file.secure_url;
-    else if (req.file && req.file.path) imageUrl = req.file.path;
 
     await product.update({
       emri: emri || product.emri,
