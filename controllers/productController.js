@@ -12,8 +12,12 @@ exports.getAllProducts = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
+    console.log('➡️ Body:', req.body);
+    console.log('➡️ File:', req.file);
+
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
 
+    // Kontrollo fushat e kërkuara
     if (!fermeri) {
       console.warn('⚠️ Field "fermeri" is missing in request');
       return res.status(400).json({ message: 'Field "fermeri" is required' });
@@ -24,30 +28,35 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ message: 'Image upload failed or no image provided' });
     }
 
-    const imageUrl = req.file.path || req.file.secure_url;
+    // Merr path ose secure_url në mënyrë fleksibile
+    const imageUrl = req.file.secure_url || req.file.path;
 
+    if (!imageUrl) {
+      console.warn('⚠️ Could not extract image URL from uploaded file');
+      return res.status(500).json({ message: 'Failed to process uploaded image' });
+    }
+
+    // Krijo produktin
     const product = await Product.create({
-      emri,
-      pershkrimi,
-      cmimi: parseInt(cmimi),
-      fermeri,
+      emri: emri.trim(),
+      pershkrimi: pershkrimi.trim(),
+      cmimi: parseFloat(cmimi),
+      fermeri: fermeri.trim(),
       image: imageUrl,
     });
 
     console.log('✅ Product created:', product.toJSON());
     res.json({ message: 'Product added successfully', product });
+
   } catch (err) {
-    console.error('❌ Error adding product:', {
-      message: err.message,
-      stack: err.stack,
-      full: JSON.stringify(err, Object.getOwnPropertyNames(err), 2),
-    });
+    console.error('❌ Error adding product:', err.message, err.stack);
     res.status(500).json({
       message: 'Error adding product',
       error: err.message || 'Unknown error',
     });
   }
 };
+
 
 exports.updateProduct = async (req, res) => {
   try {
