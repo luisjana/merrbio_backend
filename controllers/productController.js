@@ -18,10 +18,10 @@ exports.createProduct = async (req, res) => {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
 
     if (!fermeri || !emri || !pershkrimi || !cmimi) {
-      return res.status(400).json({ message: 'All fields (emri, pershkrimi, cmimi, fermeri) are required' });
+      return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const imageUrl = req.file ? (req.file.path || req.file.secure_url) : null;
+    const imageUrl = req.file?.path || req.file?.secure_url || null;
 
     const product = await Product.create({
       emri: emri.trim(),
@@ -31,7 +31,6 @@ exports.createProduct = async (req, res) => {
       image: imageUrl,
     });
 
-    console.log('✅ Product created:\n', JSON.stringify(product, null, 2));
     res.json({ message: 'Product added successfully', product });
   } catch (err) {
     console.error('❌ Error adding product:', err);
@@ -45,11 +44,9 @@ exports.updateProduct = async (req, res) => {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
 
     const product = await Product.findByPk(id);
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    const imageUrl = req.file ? (req.file.path || req.file.secure_url) : product.image;
+    const imageUrl = req.file?.path || req.file?.secure_url || product.image;
 
     await product.update({
       emri: emri || product.emri,
@@ -59,7 +56,6 @@ exports.updateProduct = async (req, res) => {
       image: imageUrl,
     });
 
-    console.log('✅ Product updated:\n', JSON.stringify(product, null, 2));
     res.json({ message: 'Product updated successfully', product });
   } catch (err) {
     console.error('❌ Error updating product:', err);
@@ -71,21 +67,10 @@ exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const deleted = await Product.destroy({ where: { id } });
-    if (deleted) {
-      console.log(`✅ Product deleted: ID ${id}`);
-      res.json({ message: 'Product deleted successfully' });
-    } else {
-      res.status(404).json({ message: 'Product not found' });
-    }
+    if (deleted) res.json({ message: 'Product deleted successfully' });
+    else res.status(404).json({ message: 'Product not found' });
   } catch (err) {
     console.error('❌ Error deleting product:', err);
     res.status(500).json({ message: 'Error deleting product', error: err.message });
   }
-};
-
-module.exports = {
-  getAllProducts: exports.getAllProducts,
-  createProduct: exports.createProduct,
-  updateProduct: exports.updateProduct,
-  deleteProduct: exports.deleteProduct,
 };

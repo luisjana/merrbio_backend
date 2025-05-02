@@ -38,7 +38,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const fileTypes = /jpeg|jpg|png|gif/;
+    const fileTypes = /jpeg|jpg|png|gif|png/;
     const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
     const mimeType = fileTypes.test(file.mimetype);
     if (extname && mimeType) return cb(null, true);
@@ -46,10 +46,9 @@ const upload = multer({
   },
 });
 
-app.get('/products', productController.getAllProducts);
 app.post('/products', upload.single('image'), productController.createProduct);
 app.put('/products/:id', upload.single('image'), productController.updateProduct);
-app.delete('/products/:id', productController.deleteProduct);
+
 
 
 // ✅ Sinkronizimi i databazës
