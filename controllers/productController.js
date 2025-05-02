@@ -12,8 +12,8 @@ exports.getAllProducts = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
-    console.log('➡️ Body:', req.body);
-    console.log('➡️ File:', req.file);
+    console.log('➡️ req.body:', req.body);
+    console.log('➡️ req.file:', req.file);
 
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
 
@@ -21,11 +21,7 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ message: 'All fields (emri, pershkrimi, cmimi, fermeri) are required' });
     }
 
-    const imageUrl = req.file ? req.file.path : null;
-
-    if (!imageUrl) {
-      return res.status(400).json({ message: 'Image upload failed or no image provided' });
-    }
+    const imageUrl = req.file ? (req.file.path || req.file.secure_url) : null;
 
     const product = await Product.create({
       emri: emri.trim(),
@@ -53,7 +49,7 @@ exports.updateProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const imageUrl = req.file ? req.file.path : product.image;
+    const imageUrl = req.file ? (req.file.path || req.file.secure_url) : product.image;
 
     await product.update({
       emri: emri || product.emri,
@@ -87,7 +83,6 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
-// ✅ EXPORT ALL FUNCTIONS PROPERLY
 module.exports = {
   getAllProducts: exports.getAllProducts,
   createProduct: exports.createProduct,

@@ -46,6 +46,12 @@ const upload = multer({
   },
 });
 
+app.get('/products', productController.getAllProducts);
+app.post('/products', upload.single('image'), productController.createProduct);
+app.put('/products/:id', upload.single('image'), productController.updateProduct);
+app.delete('/products/:id', productController.deleteProduct);
+
+
 // ✅ Sinkronizimi i databazës
 sequelize.sync().then(() => {
   console.log('📦 Databaza u sinkronizua me sukses!');
