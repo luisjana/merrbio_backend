@@ -1,15 +1,3 @@
-const Product = require('../models/Product');
-
-exports.getAllProducts = async (req, res) => {
-  try {
-    const products = await Product.findAll();
-    res.json(products);
-  } catch (err) {
-    console.error('❌ Error getting products:', err);
-    res.status(500).json({ message: 'Error getting products', error: err.message });
-  }
-};
-
 exports.createProduct = async (req, res) => {
   try {
     console.log('➡️ Body:', req.body);
@@ -21,11 +9,11 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ message: 'All fields (emri, pershkrimi, cmimi, fermeri) are required' });
     }
 
-    if (!req.file || !req.file.secure_url) {
+    const imageUrl = req.file ? req.file.path : null;  // 🔥 përdor path jo secure_url
+
+    if (!imageUrl) {
       return res.status(400).json({ message: 'Image upload failed or no image provided' });
     }
-
-    const imageUrl = req.file.secure_url;
 
     const product = await Product.create({
       emri: emri.trim(),
@@ -53,7 +41,7 @@ exports.updateProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const imageUrl = req.file ? req.file.secure_url : product.image;
+    const imageUrl = req.file ? req.file.path : product.image;
 
     await product.update({
       emri: emri || product.emri,
@@ -68,21 +56,5 @@ exports.updateProduct = async (req, res) => {
   } catch (err) {
     console.error('❌ Error updating product:', err);
     res.status(500).json({ message: 'Error updating product', error: err.message });
-  }
-};
-
-exports.deleteProduct = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deleted = await Product.destroy({ where: { id } });
-    if (deleted) {
-      console.log(`✅ Product deleted: ID ${id}`);
-      res.json({ message: 'Product deleted successfully' });
-    } else {
-      res.status(404).json({ message: 'Product not found' });
-    }
-  } catch (err) {
-    console.error('❌ Error deleting product:', err);
-    res.status(500).json({ message: 'Error deleting product', error: err.message });
   }
 };
