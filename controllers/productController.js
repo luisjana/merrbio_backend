@@ -44,9 +44,11 @@ exports.updateProduct = async (req, res) => {
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
 
     const product = await Product.findByPk(id);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
 
-    const imageUrl = req.file?.path || req.file?.secure_url || product.image;
+    const imageUrl = req.file ? req.file.path : product.image;
 
     await product.update({
       emri: emri || product.emri,
@@ -56,12 +58,14 @@ exports.updateProduct = async (req, res) => {
       image: imageUrl,
     });
 
+    console.log('✅ Product updated:\n', JSON.stringify(product, null, 2));
     res.json({ message: 'Product updated successfully', product });
   } catch (err) {
     console.error('❌ Error updating product:', err);
     res.status(500).json({ message: 'Error updating product', error: err.message });
   }
 };
+
 
 exports.deleteProduct = async (req, res) => {
   try {
