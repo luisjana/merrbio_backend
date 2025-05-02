@@ -17,26 +17,16 @@ exports.createProduct = async (req, res) => {
 
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
 
-    // Kontrollo fushat e kërkuara
-    if (!fermeri) {
-      console.warn('⚠️ Field "fermeri" is missing in request');
-      return res.status(400).json({ message: 'Field "fermeri" is required' });
+    if (!fermeri || !emri || !pershkrimi || !cmimi) {
+      return res.status(400).json({ message: 'All fields (emri, pershkrimi, cmimi, fermeri) are required' });
     }
 
-    if (!req.file) {
-      console.warn('⚠️ No image file was uploaded');
+    if (!req.file || !req.file.secure_url) {
       return res.status(400).json({ message: 'Image upload failed or no image provided' });
     }
 
-    // Merr path ose secure_url në mënyrë fleksibile
-    const imageUrl = req.file.secure_url || req.file.path;
+    const imageUrl = req.file.secure_url;
 
-    if (!imageUrl) {
-      console.warn('⚠️ Could not extract image URL from uploaded file');
-      return res.status(500).json({ message: 'Failed to process uploaded image' });
-    }
-
-    // Krijo produktin
     const product = await Product.create({
       emri: emri.trim(),
       pershkrimi: pershkrimi.trim(),
@@ -47,16 +37,11 @@ exports.createProduct = async (req, res) => {
 
     console.log('✅ Product created:', product.toJSON());
     res.json({ message: 'Product added successfully', product });
-
   } catch (err) {
-    console.error('❌ Error adding product:', err.message, err.stack);
-    res.status(500).json({
-      message: 'Error adding product',
-      error: err.message || 'Unknown error',
-    });
+    console.error('❌ Error adding product:', err);
+    res.status(500).json({ message: 'Error adding product', error: err.message });
   }
 };
-
 
 exports.updateProduct = async (req, res) => {
   try {
@@ -65,16 +50,15 @@ exports.updateProduct = async (req, res) => {
 
     const product = await Product.findByPk(id);
     if (!product) {
-      console.warn(`⚠️ Product with ID ${id} not found`);
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const imageUrl = req.file ? req.file.path : product.image;
+    const imageUrl = req.file ? req.file.secure_url : product.image;
 
     await product.update({
       emri: emri || product.emri,
       pershkrimi: pershkrimi || product.pershkrimi,
-      cmimi: cmimi ? parseInt(cmimi) : product.cmimi,
+      cmimi: cmimi ? parseFloat(cmimi) : product.cmimi,
       fermeri: fermeri || product.fermeri,
       image: imageUrl,
     });
@@ -95,7 +79,6 @@ exports.deleteProduct = async (req, res) => {
       console.log('✅ Product deleted:', id);
       res.json({ message: 'Product deleted successfully' });
     } else {
-      console.warn(`⚠️ Product with ID ${id} not found`);
       res.status(404).json({ message: 'Product not found' });
     }
   } catch (err) {
