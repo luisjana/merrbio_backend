@@ -132,6 +132,9 @@ app.delete('/users/:username', async (req, res) => {
     res.status(500).json({ message: 'Error deleting user', error: err.message });
   }
 });
+const orderController = require('./controllers/orderController');
+app.post('/orders', orderController.createOrder);
+app.get('/orders/:fermeri', orderController.getOrdersByFarmer);
 
 // ✅ Start server
 app.listen(PORT, () => {
