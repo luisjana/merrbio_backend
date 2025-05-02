@@ -135,6 +135,7 @@ app.delete('/users/:username', async (req, res) => {
 const orderController = require('./controllers/orderController');
 app.post('/orders', orderController.createOrder);
 app.get('/orders/:fermeri', orderController.getOrdersByFarmer);
+app.put('/orders/:id', orderController.updateOrderStatus);
 
 // ✅ Start server
 app.listen(PORT, () => {
