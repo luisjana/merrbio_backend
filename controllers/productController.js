@@ -35,7 +35,7 @@ exports.createProduct = async (req, res) => {
       image: imageUrl,
     });
 
-    console.log('✅ Product created:', product.toJSON());
+    console.log('✅ Product created:\n', JSON.stringify(product, null, 2));
     res.json({ message: 'Product added successfully', product });
   } catch (err) {
     console.error('❌ Error adding product:', err);
@@ -63,7 +63,7 @@ exports.updateProduct = async (req, res) => {
       image: imageUrl,
     });
 
-    console.log('✅ Product updated:', product.toJSON());
+    console.log('✅ Product updated:\n', JSON.stringify(product, null, 2));
     res.json({ message: 'Product updated successfully', product });
   } catch (err) {
     console.error('❌ Error updating product:', err);
@@ -76,7 +76,7 @@ exports.deleteProduct = async (req, res) => {
     const { id } = req.params;
     const deleted = await Product.destroy({ where: { id } });
     if (deleted) {
-      console.log('✅ Product deleted:', id);
+      console.log(`✅ Product deleted: ID ${id}`);
       res.json({ message: 'Product deleted successfully' });
     } else {
       res.status(404).json({ message: 'Product not found' });
