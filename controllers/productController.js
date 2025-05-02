@@ -1,3 +1,15 @@
+const Product = require('../models/Product');
+
+exports.getAllProducts = async (req, res) => {
+  try {
+    const products = await Product.findAll();
+    res.json(products);
+  } catch (err) {
+    console.error('❌ Error getting products:', err);
+    res.status(500).json({ message: 'Error getting products', error: err.message });
+  }
+};
+
 exports.createProduct = async (req, res) => {
   try {
     console.log('➡️ Body:', req.body);
@@ -9,7 +21,7 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ message: 'All fields (emri, pershkrimi, cmimi, fermeri) are required' });
     }
 
-    const imageUrl = req.file ? req.file.path : null;  // 🔥 përdor path jo secure_url
+    const imageUrl = req.file ? req.file.path : null;
 
     if (!imageUrl) {
       return res.status(400).json({ message: 'Image upload failed or no image provided' });
@@ -57,4 +69,28 @@ exports.updateProduct = async (req, res) => {
     console.error('❌ Error updating product:', err);
     res.status(500).json({ message: 'Error updating product', error: err.message });
   }
+};
+
+exports.deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Product.destroy({ where: { id } });
+    if (deleted) {
+      console.log(`✅ Product deleted: ID ${id}`);
+      res.json({ message: 'Product deleted successfully' });
+    } else {
+      res.status(404).json({ message: 'Product not found' });
+    }
+  } catch (err) {
+    console.error('❌ Error deleting product:', err);
+    res.status(500).json({ message: 'Error deleting product', error: err.message });
+  }
+};
+
+// ✅ EXPORT ALL FUNCTIONS PROPERLY
+module.exports = {
+  getAllProducts: exports.getAllProducts,
+  createProduct: exports.createProduct,
+  updateProduct: exports.updateProduct,
+  deleteProduct: exports.deleteProduct,
 };
