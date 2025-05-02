@@ -29,6 +29,7 @@ exports.getOrdersByFarmer = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch orders', error: err.message });
   }
 };
+// orderController.js
 exports.updateOrderStatus = async (req, res) => {
     try {
       const { id } = req.params;
@@ -38,6 +39,7 @@ exports.updateOrderStatus = async (req, res) => {
   
       order.status = status;
       await order.save();
+  
       res.json({ message: 'Order status updated', order });
     } catch (err) {
       res.status(500).json({ message: 'Failed to update order', error: err.message });
