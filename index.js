@@ -4,7 +4,6 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { storage } = require('./cloudinaryConfig');
 const sequelize = require('./db');
@@ -51,7 +50,6 @@ app.post('/register', async (req, res) => {
     if (existing) return res.status(400).json({ message: 'User already exists!' });
 
     const user = await User.create({ username, password, role });
-
     res.json({ message: 'Registration successful!', username: user.username, role: user.role });
   } catch (err) {
     handleError(res, err, 'Error during registration');
@@ -64,7 +62,7 @@ app.post('/login', async (req, res) => {
     const user = await User.findOne({ where: { username } });
     if (!user) return res.status(401).json({ message: 'Invalid credentials!' });
 
-    // Pa bcrypt → krahasim direkt
+    // Without bcrypt → direct comparison
     if (user.password !== password) return res.status(401).json({ message: 'Invalid credentials!' });
 
     if (user.role !== role) return res.status(401).json({ message: 'Role mismatch!' });
@@ -75,7 +73,6 @@ app.post('/login', async (req, res) => {
     handleError(res, err, 'Error during login');
   }
 });
-
 
 // PRODUCT routes
 app.get('/products', productController.getAllProducts);
@@ -99,8 +96,7 @@ app.post('/users', authenticate, authorizeRole('admin'), async (req, res) => {
     const existing = await User.findOne({ where: { username } });
     if (existing) return res.status(400).json({ message: 'User already exists!' });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, password: hashedPassword, role });
+    const user = await User.create({ username, password, role });
     res.json({ message: 'User added successfully!', user });
   } catch (err) {
     handleError(res, err, 'Error adding user');
