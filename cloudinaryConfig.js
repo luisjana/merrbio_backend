@@ -9,10 +9,11 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
+  params: async (req, file) => ({
     folder: 'merrbio-products',
     allowed_formats: ['jpg', 'jpeg', 'png'],
-  },
+    public_id: `${Date.now()}-${file.originalname.split('.')[0]}`,
+  }),
 });
 
 module.exports = { cloudinary, storage };
