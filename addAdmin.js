@@ -1,23 +1,20 @@
-// addAdmin.js
 const sequelize = require('./db');
 const User = require('./models/User');
+require('dotenv').config();
 
 (async () => {
   try {
-    // Sigurohemi që databaza është gati dhe tabelat ekzistojnë
     await sequelize.sync();
 
-    // Kontrollojmë nëse admin ekziston
-    const existingAdmin = await User.findOne({ where: { username: 'admin1' } });
+    const existingAdmin = await User.findOne({ where: { username: process.env.ADMIN_USERNAME } });
 
     if (existingAdmin) {
       console.log('⚠️  Admin ekziston tashmë:', existingAdmin.username);
     } else {
-      // Krijojmë admin të ri
       const admin = await User.create({
-        username: 'admin1',
-        password: 'admin123',
-        role: 'admin'
+        username: process.env.ADMIN_USERNAME,
+        password: process.env.ADMIN_PASSWORD,
+        role: process.env.ADMIN_ROLE
       });
 
       console.log('✅ Admin u shtua me sukses:', admin.username);
@@ -25,7 +22,7 @@ const User = require('./models/User');
   } catch (error) {
     console.error('❌ Gabim gjatë shtimit të admin:', error);
   } finally {
-    await sequelize.close(); // Mbyll lidhjen me databazën
+    await sequelize.close();
     process.exit();
   }
 })();
