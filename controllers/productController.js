@@ -13,24 +13,19 @@ exports.getAllProducts = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
-    console.log('➡️ req.body:', req.body);
-    console.log('➡️ req.file:', req.file);
-
     const { emri, pershkrimi, cmimi, fermeri } = req.body;
-
-    // ✅ Validime bazë
     if (!fermeri || !emri || !pershkrimi || !cmimi) {
       return res.status(400).json({ message: 'All fields are required' });
     }
     if (emri.trim().length < 3) {
-      return res.status(400).json({ message: 'Product name must be at least 3 characters' });
+      return res.status(400).json({ message: 'Product name ≥ 3 characters' });
     }
     const price = parseFloat(cmimi);
     if (isNaN(price) || price <= 0) {
       return res.status(400).json({ message: 'Price must be a positive number' });
     }
 
-    const imageUrl = req.file?.path || req.file?.secure_url || null;
+    const imageUrl = req.file?.path || null;
 
     const product = await Product.create({
       emri: emri.trim(),
@@ -50,21 +45,17 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { emri, pershkrimi, cmimi, fermeri } = req.body;
-
+    const { emri, pershkrimi, cmimi } = req.body;
     const product = await Product.findByPk(id);
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // ✅ Kontrollo dhe fshij foton e vjetër nëse ngarkohet e reja
     if (req.file && product.image) {
       await deleteImageFromCloudinary(product.image);
     }
 
     const updatedPrice = cmimi ? parseFloat(cmimi) : product.cmimi;
     if (cmimi && (isNaN(updatedPrice) || updatedPrice <= 0)) {
-      return res.status(400).json({ message: 'Price must be a positive number' });
+      return res.status(400).json({ message: 'Price must be positive' });
     }
 
     const imageUrl = req.file ? req.file.path : product.image;
@@ -73,11 +64,9 @@ exports.updateProduct = async (req, res) => {
       emri: emri ? emri.trim() : product.emri,
       pershkrimi: pershkrimi ? pershkrimi.trim() : product.pershkrimi,
       cmimi: updatedPrice,
-      fermeri: fermeri ? fermeri.trim() : product.fermeri,
       image: imageUrl,
     });
 
-    console.log('✅ Product updated:', JSON.stringify(product, null, 2));
     res.json({ message: '✅ Product updated successfully', product });
   } catch (err) {
     console.error('❌ Error updating product:', err);
@@ -89,14 +78,9 @@ exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const product = await Product.findByPk(id);
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // ✅ Fshij foton nga Cloudinary para se të fshihet produkti
-    if (product.image) {
-      await deleteImageFromCloudinary(product.image);
-    }
+    if (product.image) await deleteImageFromCloudinary(product.image);
 
     await product.destroy();
     res.json({ message: '✅ Product deleted successfully' });
