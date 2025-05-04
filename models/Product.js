@@ -25,6 +25,3 @@ const Product = sequelize.define('Product', {
 });
 
 module.exports = Product;
-
-const Order = require('./Order');
-Product.hasMany(Order, { foreignKey: 'productId' });

@@ -10,5 +10,4 @@ const Order = sequelize.define('Order', {
 });
 
 module.exports = Order;
-const Product = require('./Product');
-Order.belongsTo(Product, { foreignKey: 'productId' });
+
