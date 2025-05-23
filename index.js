@@ -6,6 +6,31 @@ const path = require('path');
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
+const swaggerUi = require('swagger-ui-express');
+const swaggerJSDoc = require('swagger-jsdoc');
+
+const swaggerOptions = {
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'MerrBio API',
+      version: '1.0.0',
+      description: 'Dokumentimi i API-ve për MerrBio',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3001',
+        description: 'Lokalisht gjatë zhvillimit',
+      },
+      {
+        url: 'https://merrbio-backend.onrender.com',
+        description: 'Serveri i deploy-uar në Render',
+      },
+    ],
+  },
+  apis: ['./index.js', './controllers/*.js'], // ose ['./routes/*.js'] nëse i ke në routes
+};
+
 
 require('dotenv').config();
 
@@ -189,6 +214,11 @@ app.post('/orders', orderController.createOrder);
 app.get('/orders/:fermeri', orderController.getOrdersByFarmer);
 // index.js
 app.put('/orders/:id', orderController.updateOrderStatus);
+
+
+const swaggerDocs = swaggerJSDoc(swaggerOptions);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 
 // ✅ Start server
