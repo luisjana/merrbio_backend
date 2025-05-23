@@ -4,6 +4,8 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const { body, validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
 require('dotenv').config();
 
@@ -109,17 +111,37 @@ app.post(
 
     const { username, password, role } = req.body;
     try {
-      const user = await User.findOne({ where: { username: username.trim(), password: password.trim() } });
+      const user = await User.findOne({
+        where: {
+          username: username.trim(),
+          password: password.trim(),
+        },
+      });
+
       if (!user) return res.status(401).json({ message: 'Invalid credentials!' });
       if (user.role.toLowerCase() !== role.toLowerCase()) {
         return res.status(401).json({ message: 'Role does not match credentials!' });
       }
-      res.json({ message: 'Login successful!', role: user.role, username: user.username });
+
+      // ✅ GJENERO TOKEN
+      const token = jwt.sign(
+        { username: user.username, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '1h' } // Tokeni skadon pas 1 ore
+      );
+
+      res.json({
+        message: 'Login successful!',
+        token,
+        role: user.role,
+        username: user.username,
+      });
     } catch (err) {
       res.status(500).json({ message: 'Error during login', error: err.message });
     }
   }
 );
+
 
 
 // 📦 PRODUCT ROUTES ME CONTROLLER
