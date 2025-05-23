@@ -39,12 +39,19 @@ const productController = require('./controllers/productController');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ✅ CORS për frontendin në Vercel
+// ✅ CORS për frontendin në Vercel dhe Swagger në Render
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || /^https:\/\/merrbio-frontend.*\.vercel\.app$/.test(origin)) {
+    const allowedOrigins = [
+      undefined, // për kërkesa pa origin (Postman, backend të brendshëm)
+      'https://merrbio-frontend.vercel.app',
+      'https://merrbio-backend.onrender.com' // për Swagger UI
+    ];
+
+    if (!origin || allowedOrigins.includes(origin) || /^https:\/\/merrbio-frontend.*\.vercel\.app$/.test(origin)) {
       callback(null, true);
     } else {
+      console.error('❌ CORS i ndaluar për:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
