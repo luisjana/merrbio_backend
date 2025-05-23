@@ -13,9 +13,6 @@ const { storage } = require('./cloudinaryConfig');
 const sequelize = require('./db');
 const User = require('./models/User');
 const productController = require('./controllers/productController');
-const orderController = require('./controllers/orderController');
-const authenticate = require('./middleware/authenticate');
-const authorizeRole = require('./middleware/authorizeRole');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -52,6 +49,11 @@ const upload = multer({
     cb('Only image files can be uploaded!');
   },
 });
+
+app.post('/products', upload.single('image'), productController.createProduct);
+app.put('/products/:id', upload.single('image'), productController.updateProduct);
+
+
 
 // ✅ Sinkronizimi i databazës
 sequelize.sync().then(() => {
@@ -92,7 +94,8 @@ app.post(
   }
 );
 
-// 🔐 Login + JWT token
+
+// 🔐 Login
 app.post(
   '/login',
   [
@@ -120,10 +123,11 @@ app.post(
         return res.status(401).json({ message: 'Role does not match credentials!' });
       }
 
+      // ✅ GJENERO TOKEN
       const token = jwt.sign(
         { username: user.username, role: user.role },
         JWT_SECRET,
-        { expiresIn: '1h' }
+        { expiresIn: '1h' } // Tokeni skadon pas 1 ore
       );
 
       res.json({
@@ -138,14 +142,16 @@ app.post(
   }
 );
 
-// 📦 PRODUCT ROUTES (të mbrojtura me JWT)
-app.get('/products', authenticate, productController.getAllProducts);
-app.post('/products', authenticate, upload.single('image'), productController.createProduct);
-app.put('/products/:id', authenticate, upload.single('image'), productController.updateProduct);
-app.delete('/products/:id', authenticate, productController.deleteProduct);
 
-// 👥 USER ROUTES (admin only)
-app.get('/users', authenticate, authorizeRole('admin'), async (req, res) => {
+
+// 📦 PRODUCT ROUTES ME CONTROLLER
+app.get('/products', productController.getAllProducts);
+app.post('/products', upload.single('image'), productController.createProduct);
+app.put('/products/:id', upload.single('image'), productController.updateProduct);
+app.delete('/products/:id', productController.deleteProduct);
+
+// 👥 Merr përdoruesit
+app.get('/users', async (req, res) => {
   try {
     const users = await User.findAll();
     res.json(users);
@@ -154,7 +160,8 @@ app.get('/users', authenticate, authorizeRole('admin'), async (req, res) => {
   }
 });
 
-app.post('/users', authenticate, authorizeRole('admin'), async (req, res) => {
+// 👤 Shto përdorues
+app.post('/users', async (req, res) => {
   const { username, password, role } = req.body;
   try {
     const existing = await User.findOne({ where: { username: username.trim() } });
@@ -167,7 +174,8 @@ app.post('/users', authenticate, authorizeRole('admin'), async (req, res) => {
   }
 });
 
-app.delete('/users/:username', authenticate, authorizeRole('admin'), async (req, res) => {
+// ❌ Fshi përdorues
+app.delete('/users/:username', async (req, res) => {
   try {
     const deleted = await User.destroy({ where: { username: req.params.username } });
     if (deleted) res.json({ message: 'User deleted successfully!' });
@@ -176,11 +184,12 @@ app.delete('/users/:username', authenticate, authorizeRole('admin'), async (req,
     res.status(500).json({ message: 'Error deleting user', error: err.message });
   }
 });
+const orderController = require('./controllers/orderController');
+app.post('/orders', orderController.createOrder);
+app.get('/orders/:fermeri', orderController.getOrdersByFarmer);
+// index.js
+app.put('/orders/:id', orderController.updateOrderStatus);
 
-// 📦 ORDER ROUTES (konsumator & fermer)
-app.post('/orders', authenticate, authorizeRole('konsumator'), orderController.createOrder);
-app.get('/orders/:fermeri', authenticate, authorizeRole('fermer'), orderController.getOrdersByFarmer);
-app.put('/orders/:id', authenticate, authorizeRole('fermer'), orderController.updateOrderStatus);
 
 // ✅ Start server
 app.listen(PORT, () => {
