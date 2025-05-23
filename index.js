@@ -18,10 +18,7 @@ const swaggerOptions = {
       description: 'Dokumentimi i API-ve për MerrBio',
     },
     servers: [
-      {
-        url: 'http://localhost:3001',
-        description: 'Lokalisht gjatë zhvillimit',
-      },
+
       {
         url: 'https://merrbio-backend.onrender.com',
         description: 'Serveri i deploy-uar në Render',
