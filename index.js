@@ -86,10 +86,44 @@ sequelize.sync().then(() => {
 });
 
 // ================= ROUTES =================
+/**
+ * @swagger
+ * /register:
+ *   post:
+ *     summary: Regjistron një përdorues të ri
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *               - role
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [admin, fermer, konsumator]
+ *     responses:
+ *       200:
+ *         description: Përdoruesi u regjistrua me sukses
+ *       400:
+ *         description: Gabim në validim ose përdoruesi ekziston
+ *       500:
+ *         description: Gabim gjatë regjistrimit
+ */
 
 // 🔐 Regjistrimi
 app.post(
   '/register',
+
   [
     body('username').notEmpty().withMessage('Username is required'),
     body('password').isLength({ min: 5 }).withMessage('Password must be at least 5 characters'),
@@ -119,6 +153,36 @@ app.post(
   }
 );
 
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: Bën login dhe kthen JWT token
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *               - role
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login i suksesshëm me token JWT
+ *       401:
+ *         description: Kredencialet nuk janë të sakta
+ */
 
 // 🔐 Login
 app.post(
@@ -170,10 +234,64 @@ app.post(
 
 
 // 📦 PRODUCT ROUTES ME CONTROLLER
+/**
+ * @swagger
+ * /products:
+ *   get:
+ *     summary: Merr të gjitha produktet
+ *     tags:
+ *       - Products
+ *     responses:
+ *       200:
+ *         description: Lista e produkteve
+ */
+
 app.get('/products', productController.getAllProducts);
+/**
+ * @swagger
+ * /products:
+ *   post:
+ *     summary: Shton një produkt të ri
+ *     tags:
+ *       - Products
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               emri:
+ *                 type: string
+ *               pershkrimi:
+ *                 type: string
+ *               cmimi:
+ *                 type: number
+ *               fermeri:
+ *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Produkti u shtua me sukses
+ */
+
 app.post('/products', upload.single('image'), productController.createProduct);
 app.put('/products/:id', upload.single('image'), productController.updateProduct);
 app.delete('/products/:id', productController.deleteProduct);
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Merr të gjithë përdoruesit
+ *     tags:
+ *       - Users
+ *     responses:
+ *       200:
+ *         description: Lista e përdoruesve
+ */
 
 // 👥 Merr përdoruesit
 app.get('/users', async (req, res) => {
@@ -184,6 +302,30 @@ app.get('/users', async (req, res) => {
     res.status(500).json({ message: 'Error fetching users', error: err.message });
   }
 });
+/**
+ * @swagger
+ * /users:
+ *   post:
+ *     summary: Shton një përdorues të ri
+ *     tags:
+ *       - Users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Përdoruesi u shtua me sukses
+ */
 
 // 👤 Shto përdorues
 app.post('/users', async (req, res) => {
@@ -198,6 +340,25 @@ app.post('/users', async (req, res) => {
     res.status(500).json({ message: 'Error adding user', error: err.message });
   }
 });
+/**
+ * @swagger
+ * /users/{username}:
+ *   delete:
+ *     summary: Fshin një përdorues sipas emrit
+ *     tags:
+ *       - Users
+ *     parameters:
+ *       - name: username
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Përdoruesi u fshi me sukses
+ *       404:
+ *         description: Përdoruesi nuk u gjet
+ */
 
 // ❌ Fshi përdorues
 app.delete('/users/:username', async (req, res) => {
@@ -210,7 +371,55 @@ app.delete('/users/:username', async (req, res) => {
   }
 });
 const orderController = require('./controllers/orderController');
+/**
+ * @swagger
+ * /products:
+ *   post:
+ *     summary: Shton një produkt të ri
+ *     tags:
+ *       - Products
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               emri:
+ *                 type: string
+ *               pershkrimi:
+ *                 type: string
+ *               cmimi:
+ *                 type: number
+ *               fermeri:
+ *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Produkti u shtua me sukses
+ */
+
 app.post('/orders', orderController.createOrder);
+/**
+ * @swagger
+ * /orders/{fermeri}:
+ *   get:
+ *     summary: Merr porositë e një fermeri
+ *     tags:
+ *       - Orders
+ *     parameters:
+ *       - name: fermeri
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista e porosive
+ */
+
 app.get('/orders/:fermeri', orderController.getOrdersByFarmer);
 // index.js
 app.put('/orders/:id', orderController.updateOrderStatus);
